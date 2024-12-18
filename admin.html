@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administrador</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Panel de Administrador</h1>
+
+    <!-- Login del administrador -->
+    <h2>Iniciar sesión de Administrador</h2>
+    <form id="admin-login-form">
+        <label for="admin-username">Username:</label>
+        <input type="text" id="admin-username" required>
+        <label for="admin-password">Password:</label>
+        <input type="password" id="admin-password" required>
+        <button type="submit">Iniciar sesión</button>
+    </form>
+
+    <!-- Panel del administrador -->
+    <div id="admin-panel" style="display:none;">
+        <h3>Bienvenido Administrador</h3>
+
+        <!-- Historial de pedidos -->
+        <h3>Historial de Pedidos de Todos los Usuarios</h3>
+        <ul id="admin-order-history"></ul>
+
+        <!-- Ver usuarios -->
+        <h3>Usuarios</h3>
+        <ul id="user-list"></ul>
+
+        <button id="logout-button">Cerrar sesión</button>
+    </div>
+
+    <script>
+        let adminUsername = null;
+
+        // Login del administrador
+        $("#admin-login-form").submit(function(event) {
+            event.preventDefault();
+            const username = $("#admin-username").val();
+            const password = $("#admin-password").val();
+
+            // Validación simple para demostrar el login del admin
+            if (username === "admin" && password === "admin123") {
+                adminUsername = username;
+                $("#admin-panel").show();
+                $("#admin-login-form").hide();
+                loadOrderHistory();
+                loadUsers();
+            } else {
+                alert("Credenciales incorrectas");
+            }
+        });
+
+        // Cargar el historial de pedidos de todos los usuarios
+        function loadOrderHistory() {
+            $.get(`/order/history`, function(response) {
+                $("#admin-order-history").empty();
+                response.forEach(order => {
+                    $("#admin-order-history").append(`<li>Order ID: ${order.order_id}, Usuario: ${order.user_id}, Estado: ${order.status}, Servicio: ${order.service}</li>`);
+                });
+            });
+        }
+
+        // Cargar la lista de usuarios
+        function loadUsers() {
+            $.get(`/users`, function(response) {
+                $("#user-list").empty();
+                response.users.forEach(user => {
+                    $("#user-list").append(`<li>${user.username} - Saldo: ${user.usd_balance} USD</li>`);
+                });
+            });
+        }
+
+        // Cerrar sesión del administrador
+        $("#logout-button").click(function() {
+            adminUsername = null;
+            $("#admin-panel").hide();
+            $("#admin-login-form").show();
+        });
+    </script>
+</body>
+</html>

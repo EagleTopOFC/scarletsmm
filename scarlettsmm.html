@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Usuario</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Panel de Usuario</h1>
+
+    <!-- Registro -->
+    <h2>Registrar</h2>
+    <form id="register-form">
+        <label for="register-username">Username:</label>
+        <input type="text" id="register-username" required>
+        <label for="register-password">Password:</label>
+        <input type="password" id="register-password" required>
+        <button type="submit">Registrar</button>
+    </form>
+
+    <!-- Login -->
+    <h2>Iniciar sesión</h2>
+    <form id="login-form">
+        <label for="login-username">Username:</label>
+        <input type="text" id="login-username" required>
+        <label for="login-password">Password:</label>
+        <input type="password" id="login-password" required>
+        <button type="submit">Iniciar sesión</button>
+    </form>
+
+    <!-- Panel de usuario -->
+    <div id="user-panel" style="display:none;">
+        <h3>Bienvenido <span id="user-name"></span></h3>
+        <p>Saldo: <span id="user-balance">0 USD</span></p>
+
+        <!-- Hacer pedido -->
+        <h3>Realizar Pedido</h3>
+        <form id="order-form">
+            <label for="service">Servicio:</label>
+            <select id="service">
+                <option value="followers">Seguidores</option>
+                <option value="likes">Likes</option>
+                <option value="comments">Comentarios</option>
+            </select>
+            <label for="target-account">Cuenta objetivo:</label>
+            <input type="text" id="target-account" required>
+            <label for="quantity">Cantidad:</label>
+            <input type="number" id="quantity" required>
+            <button type="submit">Realizar Pedido</button>
+        </form>
+
+        <!-- Historial de pedidos -->
+        <h3>Historial de Pedidos</h3>
+        <ul id="order-history"></ul>
+
+        <button id="logout-button">Cerrar sesión</button>
+    </div>
+
+    <script>
+        let userId = null;  // ID del usuario después de login
+
+        // Registro de usuario
+        $("#register-form").submit(function(event) {
+            event.preventDefault();
+            const username = $("#register-username").val();
+            const password = $("#register-password").val();
+
+            $.ajax({
+                url: "/register",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ username, password }),
+                success: function(response) {
+                    alert("Usuario registrado con éxito");
+                },
+                error: function(response) {
+                    alert("Error: " + response.responseJSON.error);
+                }
+            });
+        });
+
+        // Login de usuario
+        $("#login-form").submit(function(event) {
+            event.preventDefault();
+            const username = $("#login-username").val();
+            const password = $("#login-password").val();
+
+            $.ajax({
+                url: "/login",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({ username, password }),
+                success: function(response) {
+                    userId = username;
+                    $("#user-name").text(username);
+                    loadBalance();
+                    loadOrderHistory();
+                    $("#user-panel").show();
+                    $("#login-form").hide();
+                },
+                error: function(response) {
+                    alert("Error: " + response.responseJSON.error);
+                }
+            });
+        });
+
+        // Consultar saldo
+        function loadBalance() {
+            $.get(`/balance?user_id=${userId}`, function(response) {
+                $("#user-balance").text(response.usd_balance + " USD");
+            });
+        }
+
+        // Realizar un pedido
+        $("#order-form").submit(function(event) {
+            event.preventDefault();
+            const service = $("#service").val();
+            const targetAccount = $("#target-account").val();
+            const quantity = $("#quantity").val();
+
+            $.ajax({
+                url: "/order",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify({
+                    api_key: "your_api_key_here",  // Debes obtener este valor de alguna manera segura
+                    user_id: userId,
+                    service,
+                    link: targetAccount,
+                    quantity
+                }),
+                success: function(response) {
+                    alert("Pedido realizado con éxito");
+                    loadBalance();
+                    loadOrderHistory();
+                },
+                error: function(response) {
+                    alert("Error: " + response.responseJSON.error);
+                }
+            });
+        });
+
+        // Cargar el historial de pedidos
+        function loadOrderHistory() {
+            $.get(`/order/history?user_id=${userId}`, function(response) {
+                $("#order-history").empty();
+                response.order_history.forEach(order => {
+                    $("#order-history").append(`<li>Order ID: ${order.order_id}, Estado: ${order.status}, Servicio: ${order.service}</li>`);
+                });
+            });
+        }
+
+        // Cerrar sesión
+        $("#logout-button").click(function() {
+            userId = null;
+            $("#user-panel").hide();
+            $("#login-form").show();
+        });
+    </script>
+</body>
+</html>
